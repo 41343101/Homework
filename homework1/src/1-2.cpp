@@ -9,7 +9,6 @@ int ack(int m, int n) {
 
     while (top > 0) {
         m = M[--top];
-
         if (m == 0)  n += 1;
         else if (n == 0) {
             M[top++] = m - 1;
