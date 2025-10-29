@@ -1,16 +1,18 @@
 # 41343101
 
-# Ackermann 函數
-
-## 1.遞迴
+# Polynomial 多項式
 
 ## 解題說明
 
-Ackermann 函數是一個典型的遞迴函數，其數學定義如下：
-		 1.​ n+1				m=0
-A(m,n)=  2. A(m−1,1)		m>0,n=0
-		 3. A(m-1,A(m,n-1))	m>0,n>0
-		 
+多項式由多個項（Term）以加法或減法組成，每個項由 係數（coefficient) 與 變數的指數（exponent) 組成。
+
+一般形式：
+P(x) = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
+
+- \(a_i\)：係數（整數、浮點數等）  
+- \(x\)：變數  
+- \(n\)：多項式的最高次數（degree）
+
 ### 問題描述
 
 本題要求計算 Ackermann 函數 A(m, n) 的值。Ackermann 函數是一個經典的遞迴函數，定義如下：
@@ -30,18 +32,176 @@ A(m,n)=  2. A(m−1,1)		m>0,n=0
 
 ```cpp
 #include <iostream>
+#include <cmath>
+#include <iomanip>
 using namespace std;
+class Polynomial;
 
-int ack(int m, int n) {
-    if (m == 0) return n + 1;
-    if (n == 0) return ack(m - 1, 1);
-    return ack(m - 1, ack(m, n - 1));
+class Term {
+    friend class Polynomial;
+    friend ostream& operator<<(ostream&, const Polynomial&);
+private:
+    float coef; 
+    int exp; 
+};
+
+class Polynomial {
+    friend istream& operator>>(istream& in, Polynomial& poly);
+    friend ostream& operator<<(ostream& out, const Polynomial& poly);
+private:
+    Term* termArray;
+    int capacity;
+    int terms;
+public:
+    Polynomial() {
+        capacity = 10;
+        terms = 0;
+        termArray = new Term[capacity];
+    }
+    Polynomial(const Polynomial& poly) {
+        capacity = poly.capacity;
+        terms = poly.terms;
+        termArray = new Term[capacity];
+        for (int i = 0; i < terms; i++)
+            termArray[i] = poly.termArray[i];
+    }
+    ~Polynomial() {
+        delete[] termArray;
+    }
+    void NewTerm(float c, int e) {
+        if (c == 0) return;
+
+        for (int i = 0; i < terms; i++) {
+            if (termArray[i].exp == e) {
+                termArray[i].coef += c;
+                if (termArray[i].coef == 0) {
+                    for (int j = i; j < terms - 1; j++)
+                        termArray[j] = termArray[j + 1];
+                    terms--;
+                }
+                return;
+            }
+        }
+        if (terms == capacity) {
+            capacity *= 2;
+            Term* temp = new Term[capacity];
+            for (int i = 0; i < terms; i++)
+                temp[i] = termArray[i];
+            delete[] termArray;
+            termArray = temp;
+        }
+        termArray[terms].coef = c;
+        termArray[terms].exp = e;
+        terms++;
+        int i = terms - 1;
+        while (i > 0 && termArray[i - 1].exp < termArray[i].exp) {
+            swap(termArray[i - 1], termArray[i]);
+            i--;
+        }
+    }
+    Polynomial Add(const Polynomial& poly) const {
+        Polynomial result;
+        int aPos = 0, bPos = 0;
+        while (aPos < terms && bPos < poly.terms) {
+            if (termArray[aPos].exp == poly.termArray[bPos].exp) {
+                float sum = termArray[aPos].coef + poly.termArray[bPos].coef;
+                if (sum != 0)
+                    result.NewTerm(sum, termArray[aPos].exp);
+                aPos++; bPos++;
+            }
+            else if (termArray[aPos].exp > poly.termArray[bPos].exp) {
+                result.NewTerm(termArray[aPos].coef, termArray[aPos].exp);
+                aPos++;
+            }
+            else {
+                result.NewTerm(poly.termArray[bPos].coef, poly.termArray[bPos].exp);
+                bPos++;
+            }
+        }
+        for (; aPos < terms; aPos++)
+            result.NewTerm(termArray[aPos].coef, termArray[aPos].exp);
+        for (; bPos < poly.terms; bPos++)
+            result.NewTerm(poly.termArray[bPos].coef, poly.termArray[bPos].exp);
+
+        return result;
+    }
+    Polynomial Mult(const Polynomial& poly) const {
+        Polynomial result;
+        for (int i = 0; i < terms; i++) {
+            for (int j = 0; j < poly.terms; j++) {
+                float newCoef = termArray[i].coef * poly.termArray[j].coef;
+                int newExp = termArray[i].exp + poly.termArray[j].exp;
+                result.NewTerm(newCoef, newExp);
+            }
+        }
+        return result;
+    }
+    float Eval(float x) const {
+        float result = 0;
+        for (int i = 0; i < terms; i++)
+            result += termArray[i].coef * pow(x, termArray[i].exp);
+        return result;
+    }
+};
+istream& operator>>(istream& in, Polynomial& poly) {
+    int n;
+    in >> n;
+    poly.terms = 0; 
+    for (int i = 0; i < n; i++) {
+        float c;
+        int e;
+        in >> c >> e;
+        poly.NewTerm(c, e);
+    }
+    return in;
+}
+ostream& operator<<(ostream& out, const Polynomial& poly) {
+    if (poly.terms == 0) {
+        out << "0";
+        return out;
+    }
+
+    for (int i = 0; i < poly.terms; i++) {
+        float c = poly.termArray[i].coef;
+        int e = poly.termArray[i].exp;
+
+        if (i > 0) {
+            if (c >= 0) out << " + ";
+            else { out << " - "; c = -c; }
+        }
+        else if (c < 0) {
+            out << "-"; c = -c;
+        }
+        if (c == (int)c)
+            out << (int)c;
+        else
+            out << c;
+        if (e != 0)
+            out << "x^" << e;
+    }
+
+    return out;
 }
 
 int main() {
-    int m, n;
-    cin >> m >> n;
-    cout << ack(m, n) << endl;
+    Polynomial p1, p2;
+    float x;
+    cout << "n: ";
+    cin >> p1;
+    cout << "n: ";
+    cin >> p2;
+    cout << "x: ";
+    cin >> x;
+    cout << "a(x) = " << p1 << endl;
+    cout << "b(x) = " << p2 << endl;
+    
+    Polynomial sum = p1.Add(p2);
+    cout << "s = " << sum << endl;
+    Polynomial product = p1.Mult(p2);
+    cout << "Product = " << product << endl;
+    cout << "a(" << x << ") = " << p1.Eval(x) << endl;
+    cout << "b(" << x << ") = " << p2.Eval(x) << endl;
+
     return 0;
 }
 ```
@@ -105,120 +265,3 @@ A(m,n)
 為了避免遞迴造成 Stack Overflow ，可考慮：
 - 使用 迭代（Iteration) 或 尾遞迴（Tail Recursion） 優化。  
 - 對較大輸入值採用 記憶化（Memoization) 或 動態規劃（Dynamic Programming） 儲存中間結果，減少重複計算。
-
----------
-
-## 2.非遞迴
-
-## 解題說明
-
-Ackermann 函數是一個典型的遞迴函數，其數學定義如下：
-		 1.​ n+1				m=0
-A(m,n)=  2. A(m−1,1)		m>0,n=0
-		 3. A(m-1,A(m,n-1))	m>0,n>0
-		 
-### 問題描述
-計算 Ackermann 函數 A(m,n) 的值。因傳統遞迴可能造成 Stack Overflow，本程式改用非遞迴方式計算。
-
-### 解題策略
-使用 陣列模擬堆疊，存放待計算的 m 值，迴圈模擬遞迴呼叫。
-根據 Ackermann 函數定義處理每個 m 與 n 的情況，更新 n 或將新的子問題壓入堆疊。
-迴圈結束後，返回最終 n 作為結果，避免遞迴造成的堆疊溢位，同時保持程式邏輯與數學公式一致。
-
-## 程式實作
-
-以下為主要程式碼：
-
-```cpp
-#include <iostream>
-using namespace std;
-
-int ack(int m, int n) {
-    const int MAX = 10000;
-    int M[MAX];
-    int top = 0;
-    M[top++] = m;
-
-    while (top > 0) {
-        m = M[--top];
-
-        if (m == 0)  n += 1;
-        else if (n == 0) {
-            M[top++] = m - 1;
-            n = 1;
-        }
-        else {
-            M[top++] = m - 1;
-            M[top++] = m;
-            n -= 1;
-        }
-    }
-    return n;
-}
-int main() {
-    int m, n;
-    cin >> m >> n;
-    cout << ack(m, n) << endl;
-    return 0;
-}
-```
-
-## 效能分析
-
-1.時間複雜度：
-Ackermann 函數本身是一個超指數成長的函數，遞迴層數極深，即使改用迭代方式，計算步數仍非常多。
-對程式而言，每次迴圈會處理堆疊中的一個 m 值，並可能壓入多個新的 m 值。
-因此時間複雜度與 Ackermann 函數的值同階，大約為 O(A(m, n))。
-對小輸入，例如 m ≤ 3，時間複雜度可粗略視為 O(2^n) 或 O(多重指數)，但對大 m、n，增長極快。
-
-2.空間複雜度：
-程式使用陣列 M[MAX] 模擬堆疊，空間需求取決於堆疊最多同時存放的 m 值數量。
-因每個 m 可能產生多個子問題，堆疊深度近似 Ackermann 函數的遞迴深度。
-空間複雜度大約為 O(A(m, n))。
-優點是使用迭代避免了系統呼叫堆疊溢位，但仍受陣列大小限制（MAX = 10000）。
-
-## 測試與驗證
-
-### 測試案例
-
-| 測試案例 | 輸入參數 m | 輸入參數 n | 預期輸出 | 實際輸出 |
-|-----------|------------|------------|-----------|-----------|
-| 測試一   | 0          | 0          | 1         | 1         |
-| 測試二   | 1          | 3          | 5         | 5         |
-| 測試三   | 2          | 3          | 9         | 9         |
-| 測試四   | 3          | 4          | 125       | 125       |
-| 測試五   | 4          | 1          | 65533     | 異常拋出 (stack overflow) |
-
-> **備註**：Ackermann 函數對 m ≥ 4 時，容易造成堆疊溢位（stack overflow），因此實際執行可能拋出異常。
-
-### 編譯與執行指令
-
-```shell
-A(m,n)
-輸入 m 值: 2
-輸入 n 值: 3
-結果: 9
-```
-
-## 申論及開發報告
-
-### 選擇非遞迴的原因
-
-在本程式中，使用非遞迴方式來計算 Ackermann 函數的主要原因如下：
-
-1. **避免遞迴堆疊溢位**  
-   使用陣列模擬堆疊取代系統呼叫堆疊，可處理比傳統遞迴更大的輸入值，降低 Stack Overflow 風險。
-
-2. **程式邏輯清楚**  
-   透過迴圈與自訂堆疊，清楚表達「將問題拆解為子問題」的邏輯，每次迴圈處理堆疊頂端的 m 值並更新 n。
-
-3. **易於理解與維護**  
-   迭代程式碼接近數學公式，且不需要額外變數來追蹤遞迴呼叫，方便檢查和維護程式。
-
-### 改進方式
-
-雖然非遞迴版本避免了系統堆疊溢位，但對大輸入值仍可能遇到陣列大小限制或超長運算時間，可考慮以下改進：
-
-- **動態調整堆疊大小**，避免固定陣列上限限制。  
-- **記憶化（Memoization）** 或 **動態規劃（Dynamic Programming）** 儲存中間結果，減少重複計算。  
-- 針對非常大輸入，可結合 **尾遞迴優化** 或其他數學化簡公式，提升效率。
