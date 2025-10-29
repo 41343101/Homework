@@ -2,37 +2,29 @@
 #include <cmath>
 #include <iomanip>
 using namespace std;
+class Polynomial;
 
-class Polynomial;  // 前置宣告
-
-// ------------------ Term 類別 ------------------
 class Term {
     friend class Polynomial;
     friend ostream& operator<<(ostream&, const Polynomial&);
 private:
-    float coef;  // 係數
-    int exp;     // 指數
+    float coef; 
+    int exp; 
 };
 
-// ------------------ Polynomial 類別 ------------------
 class Polynomial {
     friend istream& operator>>(istream& in, Polynomial& poly);
     friend ostream& operator<<(ostream& out, const Polynomial& poly);
-
 private:
     Term* termArray;
     int capacity;
     int terms;
-
 public:
-    // 建構子
     Polynomial() {
         capacity = 10;
         terms = 0;
         termArray = new Term[capacity];
     }
-
-    // 拷貝建構子
     Polynomial(const Polynomial& poly) {
         capacity = poly.capacity;
         terms = poly.terms;
@@ -40,22 +32,16 @@ public:
         for (int i = 0; i < terms; i++)
             termArray[i] = poly.termArray[i];
     }
-
-    // 解構子
     ~Polynomial() {
         delete[] termArray;
     }
-
-    // ------------------ 新增或合併項 ------------------
     void NewTerm(float c, int e) {
         if (c == 0) return;
 
-        // 合併相同指數項
         for (int i = 0; i < terms; i++) {
             if (termArray[i].exp == e) {
                 termArray[i].coef += c;
                 if (termArray[i].coef == 0) {
-                    // 刪除為0的項
                     for (int j = i; j < terms - 1; j++)
                         termArray[j] = termArray[j + 1];
                     terms--;
@@ -63,8 +49,6 @@ public:
                 return;
             }
         }
-
-        // 陣列擴充
         if (terms == capacity) {
             capacity *= 2;
             Term* temp = new Term[capacity];
@@ -73,21 +57,15 @@ public:
             delete[] termArray;
             termArray = temp;
         }
-
-        // 插入新項
         termArray[terms].coef = c;
         termArray[terms].exp = e;
         terms++;
-
-        // 指數遞減排序（插入排序法）
         int i = terms - 1;
         while (i > 0 && termArray[i - 1].exp < termArray[i].exp) {
             swap(termArray[i - 1], termArray[i]);
             i--;
         }
     }
-
-    // ------------------ 多項式加法 ------------------
     Polynomial Add(const Polynomial& poly) const {
         Polynomial result;
         int aPos = 0, bPos = 0;
@@ -114,8 +92,6 @@ public:
 
         return result;
     }
-
-    // ------------------ 多項式乘法 ------------------
     Polynomial Mult(const Polynomial& poly) const {
         Polynomial result;
         for (int i = 0; i < terms; i++) {
@@ -127,8 +103,6 @@ public:
         }
         return result;
     }
-
-    // ------------------ 多項式評估 ------------------
     float Eval(float x) const {
         float result = 0;
         for (int i = 0; i < terms; i++)
@@ -136,12 +110,10 @@ public:
         return result;
     }
 };
-
-// ------------------ operator>> ------------------
 istream& operator>>(istream& in, Polynomial& poly) {
     int n;
     in >> n;
-    poly.terms = 0; // 清空原有內容
+    poly.terms = 0; 
     for (int i = 0; i < n; i++) {
         float c;
         int e;
@@ -150,8 +122,6 @@ istream& operator>>(istream& in, Polynomial& poly) {
     }
     return in;
 }
-
-// ------------------ operator<< ------------------
 ostream& operator<<(ostream& out, const Polynomial& poly) {
     if (poly.terms == 0) {
         out << "0";
@@ -169,14 +139,10 @@ ostream& operator<<(ostream& out, const Polynomial& poly) {
         else if (c < 0) {
             out << "-"; c = -c;
         }
-
-        // 只顯示必要的小數點
         if (c == (int)c)
             out << (int)c;
         else
             out << c;
-
-        // 所有非零指數都顯示 x^exp
         if (e != 0)
             out << "x^" << e;
     }
@@ -184,8 +150,6 @@ ostream& operator<<(ostream& out, const Polynomial& poly) {
     return out;
 }
 
-
-// ------------------ 主程式 ------------------
 int main() {
     Polynomial p1, p2;
     float x;
