@@ -219,6 +219,6 @@ bst_height.exe
 
 ### 改進方式
 
-可改用 自平衡 BST（如 AVL 或 Red-Black Tree）
-使用 迭代方式插入 避免遞迴過深
+可改用自平衡BST（如 AVL 或 Red-Black Tree）
+使用迭代方式插入避免遞迴過深
 儲存節點高度作為成員以加速高度查詢
