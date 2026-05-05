@@ -1,59 +1,54 @@
 # 41343101
 
-# MinHeap 最小堆積程式
+# Graph Algorithms 圖形演算法實作報告
 
 ## 解題說明
 
 ### 問題描述
 
-本程式實作**最小優先佇列（Min Priority Queue）**，並以**最小堆積（Min Heap）**作為底層資料結構，提供以下功能：
+本程式實作了圖形理論中五個核心的演算法與操作，涵蓋了從基本的遍歷到進階的網路分析功能：
 
-- 插入元素（Push）  
-- 刪除最小元素（Pop）  
-- 取得最小元素（Top）  
-- 判斷是否為空（IsEmpty）  
-- 以陣列順序輸出堆積內容  
-
-使用者輸入 n 個整數，程式將其插入 MinHeap 中，並輸出堆積的內部陣列表示。
+- **基本圖形遍歷**：實作深度優先搜尋（DFS）與廣度優先搜尋（BFS）。
+- **連通分支（Connected Components）**：識別無向圖中所有孤立的連通群體。
+- **最小生成樹（MST）**：使用 **Kruskal 演算法** 在加權圖中尋找總權重最小的生成樹。
+- **單源最短路徑**：實作 **Dijkstra 演算法** 計算起點到各頂點的最短距離。
+- **拓撲排序（Topological Sort）**：針對有向無環圖（DAG）決定活動執行的先後順序（AOV 網路）。
 
 ### 解題策略
 
 ### 2.1 資料結構設計
 
-#### MinPQ（抽象類別）
-- 定義優先佇列的基本操作介面：
-  - `IsEmpty()`
-  - `Top()`
-  - `Push()`
-  - `Pop()`
+#### 鄰接表 (Adjacency List)
+- 使用 `vector<vector<int>>` 或 `vector<vector<pair<int, int>>>`。
+- 相比鄰接矩陣，能有效節省空間並提高遍歷鄰居的效率。
 
-#### MinHeap（實作類別）
-- 使用**動態陣列**儲存堆積
-- 採用**完全二元樹（Complete Binary Tree）**結構
-- 陣列從 index 1 開始：
-  - 父節點：i / 2  
-  - 左子節點：2i  
-  - 右子節點：2i + 1  
+#### 互斥集合 (Disjoint Set Union, DSU)
+- 用於 Kruskal 演算法。
+- 實作「路徑壓縮」與「按秩合併」優化，使查詢與合併操作趨近於常數時間。
+
+#### 優先佇列 (Priority Queue)
+- 用於 Dijkstra 演算法。
+- 使用最小堆積（Min-Heap）結構，每次取出目前距離最小的節點。
 
 ---
 
 ### 2.2 核心運算流程
 
-1. **插入元素（Push）**
-   - 將新元素放在陣列尾端  
-   - 使用「上浮（heapify up）」維持最小堆性質  
-   - 若容量不足則進行陣列擴充（Resize）
+1. **DFS & BFS**
+   - **DFS**：利用遞迴深入探索，直到無路可走再回溯。
+   - **BFS**：利用佇列（Queue）逐層探索，適合尋找無權重圖的最短路徑。
 
-2. **刪除最小元素（Pop）**
-   - 移除根節點（最小值）  
-   - 將最後一個元素移至根節點  
-   - 使用「下沉（heapify down）」重新調整  
+2. **Kruskal 演算法**
+   - 將所有邊按權重**從小到大排序**。
+   - 利用 DSU 檢查邊的兩個端點是否已連通，若未連通則加入 MST，避免形成環。
 
-3. **取得最小值（Top）**
-   - 回傳陣列 index 1 的元素  
+3. **Dijkstra 演算法**
+   - 初始化距離陣列為無限大，起點為 0。
+   - 重複選取距離最短的頂點進行**鬆弛操作（Relaxation）**，更新鄰居的最短距離。
 
-4. **動態擴充（Resize）**
-   - 當容量不足時，將陣列大小擴大為原本的 2 倍 
+4. **拓撲排序 (Kahn's Algorithm)**
+   - 統計所有節點的**入度 (In-degree)**。
+   - 將入度為 0 的節點放入佇列，取出後更新其指向節點的入度，重複此過程。
 
 ## 程式實作
 
@@ -61,120 +56,254 @@
 
 ```cpp
 #include <iostream>
-#include <stdexcept>
+#include <vector>
+#include <queue>
+#include <algorithm>
 using namespace std;
+#define INF 1e9
 
-template <class T>
-class MinPQ {
+class BasicGraph {
+private:
+    int n;
+    vector<vector<int>> adj;
+    void DFSUtil(int v, vector<bool>& visited) {
+        visited[v] = true;
+        cout << v << " ";
+        for (int u : adj[v]) {
+            if (!visited[u]) {
+                DFSUtil(u, visited);
+            }
+        }
+    }
 public:
-    virtual ~MinPQ() {}
-    virtual bool IsEmpty() const = 0;
-    virtual const T& Top() const = 0;
-    virtual void Push(const T&) = 0;
-    virtual void Pop() = 0;
+    BasicGraph(int nodes) : n(nodes) {
+        adj.resize(n);
+    }
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    void DFS(int startVertex) {
+        vector<bool> visited(n, false);
+        cout << "DFS: ";
+        DFSUtil(startVertex, visited);
+        cout << endl;
+    }
+    void BFS(int startVertex) {
+        vector<bool> visited(n, false);
+        queue<int> q;
+        visited[startVertex] = true;
+        q.push(startVertex);
+        cout << "BFS: ";
+        while (!q.empty()) {
+            int v = q.front();
+            cout << v << " ";
+            q.pop();
+            for (int u : adj[v]) {
+                if (!visited[u]) {
+                    visited[u] = true;
+                    q.push(u);
+                }
+            }
+        }
+        cout << endl;
+    }
+    void ConnectedComponents() {
+        vector<bool> visited(n, false);
+        cout << "Connected Components:" << endl;
+        int count = 1;
+        for (int v = 0; v < n; v++) {
+            if (!visited[v]) {
+                cout << "  Component " << count++ << ": ";
+                DFSUtil(v, visited);
+                cout << endl;
+            }
+        }
+    }
 };
 
-template <class T>
-class MinHeap : public MinPQ<T> {
-private:
-    T* heap;
-    int capacity;
-    int size;
-
-    void Resize() {
-        capacity *= 2;
-        T* newHeap = new T[capacity + 1]; // index從1開始
-
-        for (int i = 1; i <= size; i++)
-            newHeap[i] = heap[i];
-
-        delete[] heap;
-        heap = newHeap;
+struct Edge {
+    int u, v, weight;
+    bool operator<(Edge const& other) {
+        return weight < other.weight;
     }
+};
 
+class DisjointSet {
+    vector<int> parent, rank;
 public:
-    MinHeap(int cap = 10) {
-        capacity = cap;
-        heap = new T[capacity + 1]; // index從1開始
-        size = 0;
+    DisjointSet(int n) {
+        parent.resize(n);
+        rank.resize(n, 0);
+        for (int i = 0; i < n; i++) parent[i] = i;
     }
-
-    ~MinHeap() {
-        delete[] heap;
+    int find(int i) {
+        if (parent[i] == i) return i;
+        return parent[i] = find(parent[i]);
     }
-
-    bool IsEmpty() const {
-        return size == 0;
-    }
-
-    const T& Top() const {
-        if (IsEmpty())
-            throw runtime_error("Heap is empty");
-        return heap[1];
-    }
-
-    void Push(const T& x) {
-        if (size + 1 == capacity)
-            Resize();
-
-        int i = ++size;
-
-        // 上浮 (heapify up)
-        while (i != 1 && x < heap[i / 2]) {
-            heap[i] = heap[i / 2];
-            i /= 2;
+    void unite(int i, int j) {
+        int rootI = find(i);
+        int rootJ = find(j);
+        if (rootI != rootJ) {
+            if (rank[rootI] < rank[rootJ]) parent[rootI] = rootJ;
+            else if (rank[rootI] > rank[rootJ]) parent[rootJ] = rootI;
+            else {
+                parent[rootJ] = rootI;
+                rank[rootI]++;
+            }
         }
-
-        heap[i] = x;
     }
+};
 
-    void Pop() {
-        if (IsEmpty())
-            throw runtime_error("Heap is empty");
-
-        T last = heap[size--];
-
-        int parent = 1;
-        int child = 2;
-
-        // 下沉 (heapify down)
-        while (child <= size) {
-            if (child < size && heap[child] > heap[child + 1])
-                child++;
-
-            if (last <= heap[child])
-                break;
-
-            heap[parent] = heap[child];
-            parent = child;
-            child *= 2;
+class MSTGraph {
+    int V;
+    vector<Edge> edges;
+public:
+    MSTGraph(int V) : V(V) {}
+    void addEdge(int u, int v, int w) {
+        edges.push_back({u, v, w});
+    }
+    void KruskalMST() {
+        int mst_weight = 0;
+        sort(edges.begin(), edges.end());
+        DisjointSet ds(V);
+        cout << "Kruskal's MST Edges:\n";
+        for (Edge e : edges) {
+            if (ds.find(e.u) != ds.find(e.v)) {
+                ds.unite(e.u, e.v);
+                mst_weight += e.weight;
+                cout << "  " << e.u << " - " << e.v << " \t(Weight: " << e.weight << ")\n";
+            }
         }
-
-        heap[parent] = last;
+        cout << "Total MST Weight: " << mst_weight << endl;
     }
+};
 
-    void PrintByIndex() const {
-        for (int i = 1; i <= size; i++)
-            cout << heap[i] << " ";
+class ShortestPathGraph {
+    int V;
+    vector<vector<pair<int, int>>> adj;
+public:
+    ShortestPathGraph(int V) : V(V) {
+        adj.resize(V);
+    }
+    void addEdge(int u, int v, int w) {
+        adj[u].push_back({v, w});
+    }
+    void Dijkstra(int src) {
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+        vector<int> dist(V, INF);
+        pq.push({0, src});
+        dist[src] = 0;
+        while (!pq.empty()) {
+            int u = pq.top().second;
+            pq.pop();
+            for (auto x : adj[u]) {
+                int v = x.first;
+                int weight = x.second;
+                if (dist[v] > dist[u] + weight) {
+                    dist[v] = dist[u] + weight;
+                    pq.push({dist[v], v});
+                }
+            }
+        }
+        cout << "Vertex\tDistance from Source (" << src << ")\n";
+        for (int i = 0; i < V; ++i)
+            cout << i << "\t" << (dist[i] == INF ? -1 : dist[i]) << "\n";
+    }
+};
+
+class AOVNetwork {
+    int V;
+    vector<vector<int>> adj;
+    vector<int> in_degree;
+public:
+    AOVNetwork(int V) : V(V) {
+        adj.resize(V);
+        in_degree.resize(V, 0);
+    }
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        in_degree[v]++;
+    }
+    void TopologicalSort() {
+        queue<int> q;
+        for (int i = 0; i < V; i++) {
+            if (in_degree[i] == 0) {
+                q.push(i);
+            }
+        }
+        int count = 0;
+        vector<int> top_order;
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            top_order.push_back(u);
+            for (int v : adj[u]) {
+                if (--in_degree[v] == 0) {
+                    q.push(v);
+                }
+            }
+            count++;
+        }
+        if (count != V) {
+            cout << "There exists a cycle in the network (Not a DAG)\n";
+            return;
+        }
+        cout << "Topological Sort (Activity Order): ";
+        for (int i : top_order) {
+            cout << i << " ";
+        }
         cout << endl;
     }
 };
 
 int main() {
-    MinHeap<int> h;
+    cout << "========== 1 & 2. 基本圖形操作 ==========\n";
+    BasicGraph bg(5);
+    bg.addEdge(0, 1);
+    bg.addEdge(0, 2);
+    bg.addEdge(1, 2);
+    bg.addEdge(3, 4); 
+    bg.DFS(0);
+    bg.BFS(0);
+    bg.ConnectedComponents();
+    cout << "\n";
 
-    int n, x;
-    cout << "輸入元素個數: ";
-    cin >> n;
+    cout << "========== 3. 最小花費生成樹 (Kruskal) ==========\n";
+    MSTGraph mg(4);
+    mg.addEdge(0, 1, 10);
+    mg.addEdge(0, 2, 6);
+    mg.addEdge(0, 3, 5);
+    mg.addEdge(1, 3, 15);
+    mg.addEdge(2, 3, 4);
+    mg.KruskalMST();
+    cout << "\n";
 
-    cout << "輸入元素: ";
-    for (int i = 0; i < n; i++) {
-        cin >> x;
-        h.Push(x);
-    }
+    cout << "========== 4. 最短路徑 (Dijkstra) ==========\n";
+    ShortestPathGraph spg(5);
+    spg.addEdge(0, 1, 10);
+    spg.addEdge(0, 4, 5);
+    spg.addEdge(1, 2, 1);
+    spg.addEdge(1, 4, 2);
+    spg.addEdge(4, 1, 3);
+    spg.addEdge(4, 2, 9);
+    spg.addEdge(4, 3, 2);
+    spg.addEdge(2, 3, 4);
+    spg.addEdge(3, 2, 6);
+    spg.addEdge(3, 0, 7);
+    spg.Dijkstra(0);
+    cout << "\n";
 
-    cout << "Heap (index順序): ";
-    h.PrintByIndex();
+    cout << "========== 5. 活動網路 (Topological Sort) ==========\n";
+    AOVNetwork aov(6);
+    aov.addEdge(5, 2);
+    aov.addEdge(5, 0);
+    aov.addEdge(4, 0);
+    aov.addEdge(4, 1);
+    aov.addEdge(2, 3);
+    aov.addEdge(3, 1);
+    aov.TopologicalSort();
+    cout << "\n";
 
     return 0;
 }
@@ -183,55 +312,52 @@ int main() {
 ## 效能分析
 
 1.時間複雜度：
-| 操作 | 複雜度 |
-|------|--------|
-| 插入（Push） | O(log n) |
-| 刪除最小值（Pop） | O(log n) |
-| 取得最小值（Top） | O(1) |
-| 判斷是否為空 | O(1) |
-| 建立堆積（n 次插入） | O(n log n) |
+| 演算法 | 複雜度 | 說明 |
+|------|--------|------|
+| DFS / BFS | $O(V + E)$ | 每個節點與邊皆走訪一次 |
+| Kruskal | $O(E \log E)$ | 主要時間花在邊的排序 |
+| Dijkstra | $O(E \log V)$ | 使用優先佇列優化 |
+| Topological Sort | $O(V + E)$ | 基於入度的線性處理 |
 
 2.空間複雜度：
-- O(n)  
-- 使用動態陣列儲存所有元素  
+- $O(V + E)$  
+- 使用鄰接表儲存圖形結構。
 
 ## 測試與驗證
 
 ### 測試案例
 
-**輸入**
+**1. MST 驗證**
+- 輸入：邊(0,1,10), (0,2,6), (0,3,5), (2,3,4)
+- 輸出：Total MST Weight: 19
 
-5
-5 3 8 1 2
-
-
-**輸出**
-
-Heap (index順序): 1 2 8 5 3
+**2. Dijkstra 驗證**
+- 輸入：0->1(10), 0->4(5), 1->2(1)
+- 輸出：0 到各點的最短路徑。
 
 ### 編譯與執行指令
 
 ```bash
-g++ minheap.cpp -std=c++14 -o minheap
-minheap.exe
+g++ graph_algo.cpp -std=c++14 -o graph_algo
+./graph_algo
 
 ```
 
 ## 申論及開發報告
 
-### 選擇 MinHeap 的原因
+### 選擇這些演算法的原因
 
-1.高效率優先佇列：
-插入與刪除操作皆為 O(log n)，效率優於一般排序方式
+1. **模組化設計**：
+   將不同功能的演算法封裝在獨立類別中，易於維護與測試。
 
-2.結構簡單：
-使用陣列即可實現完全二元樹，不需額外指標結構
+2. **實用性廣**：
+   圖形演算法是解決排程（Topological Sort）、導航（Dijkstra）及網路佈線（Kruskal）的基礎。
 
-3.應用廣泛：
-可應用於 Dijkstra、Huffman Coding、排程系統等
+3. **效能優勢**：
+   採用鄰接表而非鄰接矩陣，對於稀疏圖（Sparse Graph）能大幅減少記憶體佔用。
 
 ### 改進方式
 
-改用 平衡樹（AVL / Red-Black Tree） 優化搜尋效率
-使用 快速冪（Fast Power） 加速 Evaluate
-加入 多執行緒 平行處理乘法運算
+- **負權重支援**：Dijkstra 不支援負權重，未來可加入 Bellman-Ford 演算法。
+- **強連通分量**：針對有向圖，可實作 Tarjan 演算法識別強連通分量。
+- **迭代優化**：在 DFS 實作中若圖過深，改用顯式堆疊（Stack）可避免溢位。
