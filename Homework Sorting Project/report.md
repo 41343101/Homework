@@ -321,13 +321,12 @@ int main() {
 ## 效能分析
 
 1.時間複雜度：
-| 演算法 | 平均 | 最壞 |
-|--------|------|------|
-| Insertion Sort | O(n²) | O(n²) |
-| Quick Sort | O(n log n) | O(n²) |
-| Merge Sort | O(n log n) | O(n log n) |
-| Heap Sort | O(n log n) | O(n log n) |
-| Composite Sort | O(n log n) | O(n²) |
+演算法,平均情況,最壞情況
+Insertion Sort,O(n2),O(n2)
+Quick Sort,O(nlogn),O(n2)
+Merge Sort,O(nlogn),O(nlogn)
+Heap Sort,O(nlogn),O(nlogn)
+Composite Sort,O(nlogn),O(nlogn)
 
 2.空間複雜度：
 | 演算法 | 空間 |
