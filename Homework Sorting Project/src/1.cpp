@@ -1,4 +1,4 @@
-include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <chrono>
@@ -8,15 +8,8 @@ include <iostream>
 
 using namespace std;
 using Clk = chrono::high_resolution_clock;
-
-// =========================
-// RNG
-// =========================
 mt19937 rng(20260530);
 
-// =========================
-// Utility
-// =========================
 void CopyArray(const int* src, int* dst, int n) {
     for (int i = 0; i < n; i++) dst[i] = src[i];
 }
@@ -40,9 +33,6 @@ vector<int> MakeReverse(int n) {
     return v;
 }
 
-// =========================
-// Sorting Algorithms (raw + optimized mix)
-// =========================
 void InsertionSort(int* a, int n) {
     for (int i = 1; i < n; i++) {
         int key = a[i];
@@ -66,19 +56,15 @@ int Median3(int* a, int l, int r) {
 
 void QuickSortRec(int* a, int l, int r) {
     if (l >= r) return;
-
     int pivot = Median3(a, l, r);
     int i = l, j = r - 1;
-
     while (true) {
         while (a[++i] < pivot);
         while (a[--j] > pivot);
         if (i < j) swap(a[i], a[j]);
         else break;
     }
-
     swap(a[i], a[r]);
-
     QuickSortRec(a, l, i - 1);
     QuickSortRec(a, i + 1, r);
 }
@@ -87,7 +73,6 @@ void QuickSort(int* a, int n) {
     QuickSortRec(a, 0, n - 1);
 }
 
-// bottom-up merge
 void Merge(int* a, int* tmp, int l, int m, int r) {
     int i = l, j = m, k = l;
     while (i < m && j < r) {
@@ -111,7 +96,6 @@ void MergeSort(int* a, int n) {
     }
 }
 
-// heap
 void HeapDown(int* a, int n, int i) {
     while (2 * i + 1 < n) {
         int c = 2 * i + 1;
@@ -125,33 +109,25 @@ void HeapDown(int* a, int n, int i) {
 void HeapSort(int* a, int n) {
     for (int i = n / 2 - 1; i >= 0; i--)
         HeapDown(a, n, i);
-
     for (int i = n - 1; i > 0; i--) {
         swap(a[0], a[i]);
         HeapDown(a, i, 0);
     }
 }
 
-// hybrid
 const int CUTOFF = 32;
-
 void CompositeSort(int* a, int n) {
     if (n <= CUTOFF) InsertionSort(a, n);
     else HeapSort(a, n);
 }
 
-// =========================
-// Timing (adaptive like research version)
-// =========================
 double TimeSort(void (*fn)(int*, int), const vector<int>& src, int n) {
     int* a = new int[n];
-
     int rep = 1;
     double t = 0;
 
     while (rep <= 1024) {
         auto st = Clk::now();
-
         for (int i = 0; i < rep; i++) {
             CopyArray(src.data(), a, n);
             fn(a, n);
@@ -163,14 +139,10 @@ double TimeSort(void (*fn)(int*, int), const vector<int>& src, int n) {
         if (t > 50000) break; // 50ms
         rep *= 2;
     }
-
     delete[] a;
     return t / rep;
 }
 
-// =========================
-// Correctness (from framework style)
-// =========================
 bool Check(void (*fn)(int*, int)) {
     vector<vector<int>> tests = {
         {},
@@ -194,9 +166,6 @@ bool Check(void (*fn)(int*, int)) {
     return true;
 }
 
-// =========================
-// Main Benchmark
-// =========================
 int main() {
     vector<int> ns = {20, 50, 100, 500, 1000, 2000, 4000};
 
@@ -210,7 +179,6 @@ int main() {
     }
 
     cout << "n,Insertion,Quick,Merge,Heap,Composite(us)\n";
-
     for (int n : ns) {
         vector<int> base = MakeRandom(n);
 
@@ -227,6 +195,5 @@ int main() {
              << th << ","
              << tc << "\n";
     }
-
     return 0;
 }
