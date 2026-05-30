@@ -309,25 +309,25 @@ int main() {
 
 ### 1. 時間複雜度比較
 
-| 演算法 | 平均情況 | 最壞情況 | 特性簡述 |
+| 演算法 | 平均情況 | 最壞情況 ||
 | --- | --- | --- | --- |
-| **Insertion Sort** | $O(n^2)$ | $O(n^2)$ | 隨機資料表現差，接近排序完成時極快 |
-| **Quick Sort** | $O(n \log n)$ | $O(n^2)$ | 實務常數最小，Median-3 可防範多數惡劣測資 |
-| **Merge Sort** | $O(n \log n)$ | $O(n \log n)$ | 效能極度穩定，不受輸入資料排列影響 |
-| **Heap Sort** | $O(n \log n)$ | $O(n \log n)$ | 效能穩定且不需額外空間 |
-| **Composite Sort** | $O(n \log n)$ | $O(n \log n)$ | 兼具 Merge 的穩定度與 Insertion 的低常數優勢 |
+| **Insertion Sort** | $O(n^2)$ | $O(n^2)$ |
+| **Quick Sort** | $O(n \log n)$ | $O(n^2)$ |
+| **Merge Sort** | $O(n \log n)$ | $O(n \log n)$ |
+| **Heap Sort** | $O(n \log n)$ | $O(n \log n)$ |
+| **Composite Sort** | $O(n \log n)$ | $O(n \log n)$ |
 
 ---
 
 ### 2. 空間複雜度比較
 
-| 演算法 | 額外空間複雜度 | 原地排序（In-place） | 穩定性（Stable） |
-| --- | --- | --- | --- |
-| **Insertion Sort** | $O(1)$ | 是 | 穩定 |
-| **Quick Sort** | $O(\log n)$ | 否（遞迴棧開銷） | 不穩定 |
-| **Merge Sort** | $O(n)$ | 否（需暫存陣列） | 穩定 |
-| **Heap Sort** | $O(1)$ | 是 | 不穩定 |
-| **Composite Sort** | $O(n)$ | 否（需暫存陣列） | 穩定 |
+| 演算法 | 額外空間複雜度 |
+| --- | --- |
+| **Insertion Sort** | $O(1)$ |
+| **Quick Sort** | $O(\log n)$ |
+| **Merge Sort** | $O(n)$ |
+| **Heap Sort** | $O(1)$ |
+| **Composite Sort** | $O(n)$ |
 
 ---
 
