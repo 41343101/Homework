@@ -1,3 +1,62 @@
+
+
+# 41343101
+
+# Sorting Algorithm Benchmark Report（排序演算法效能比較）
+
+## 解題說明
+
+### 問題描述
+
+本程式實作五種經典排序演算法，並建立高精度自適應計時系統，針對不同規模的隨機與極端資料進行排序，測量各演算法的平均與最壞執行時間（微秒級 $\mu s$）。
+
+評估的演算法包含：
+
+* Insertion Sort（插入排序）
+* Quick Sort（快速排序：Median-of-3 優化）
+* Merge Sort（合併排序：Bottom-up 實作）
+* Heap Sort（堆積排序：Max Heap 原地排序）
+* Composite Sort（混合排序：分治法 + 插入排序截斷）
+
+---
+
+## 解題策略
+
+### 2.1 資料產生方式
+
+* **隨機資料（Average Case）**：使用 `mt19937` 隨機數生成器搭配 `std::shuffle` 產生 $1 \sim n$ 的打亂序列。
+* **逆序資料（Worst Case for Insertion）**：產生 $n \sim 1$ 的反向排序資料。
+* **分治惡劣資料（Worst Case for Merge）**：透過交錯拆分演算法，產生能最大化 Merge 比較次數的特殊序列。
+
+---
+
+### 2.2 正確性驗證
+
+`Check()` 函式用於驗證排序正確性。測試內容涵蓋：空陣列、單一元素、小型資料、逆序資料與隨機資料，並以 C++ 標準庫 `std::sort` 的結果作為標準答案進行比對。
+
+---
+
+### 2.3 排序演算法設計與優化
+
+* **Insertion Sort**：適用小規模資料，時間複雜度為 $O(n^2)$，常數開銷低。
+* **Quick Sort**：採用 **Median-of-3** 選擇 Pivot，防止已排序資料導致效能退化。同時導入 **Cutoff 機制**：當子區間長度 $\le 16$ 時，自動改用 Insertion Sort 處理以消除深層遞迴開銷。
+* **Merge Sort**：採用 **Bottom-up（非遞迴）** 實作，避免遞迴時的系統函式呼叫成本。
+* **Heap Sort**：使用 **Max Heap** 進行原地（In-place）排序，空間複雜度僅需 $O(1)$。
+* **Composite Sort（混合優化）**：在大規模分治時採用時間複雜度最穩定的 **Merge Sort**；當區間切分至 $\le 32$ 時，自動切換為常數極低的 **Insertion Sort**。
+
+---
+
+### 2.4 效能測試方法（Adaptive Benchmark）
+
+為消除微秒級測量的系統誤差，建立自適應重複機制：當單次排序時間過短時，自動將執行次數（Trials）乘以 2，直到總量測時間超過 100ms（100,000 微秒）後再取平均值。
+
+---
+
+## 程式實作
+
+以下為完整 C++ 原始碼：
+
+```cpp
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -243,3 +302,80 @@ int main() {
     }
     return 0;
 }
+
+```
+
+---
+
+## 效能分析
+
+### 1. 時間複雜度比較
+
+| 演算法 | 平均情況 | 最壞情況 | 特性簡述 |
+| --- | --- | --- | --- |
+| **Insertion Sort** | $O(n^2)$ | $O(n^2)$ | 隨機資料表現差，接近排序完成時極快 |
+| **Quick Sort** | $O(n \log n)$ | $O(n^2)$ | 實務常數最小，Median-3 可防範多數惡劣測資 |
+| **Merge Sort** | $O(n \log n)$ | $O(n \log n)$ | 效能極度穩定，不受輸入資料排列影響 |
+| **Heap Sort** | $O(n \log n)$ | $O(n \log n)$ | 效能穩定且不需額外空間 |
+| **Composite Sort** | $O(n \log n)$ | $O(n \log n)$ | 兼具 Merge 的穩定度與 Insertion 的低常數優勢 |
+
+---
+
+### 2. 空間複雜度比較
+
+| 演算法 | 額外空間複雜度 | 原地排序（In-place） | 穩定性（Stable） |
+| --- | --- | --- | --- |
+| **Insertion Sort** | $O(1)$ | 是 | 穩定 |
+| **Quick Sort** | $O(\log n)$ | 否（遞迴棧開銷） | 不穩定 |
+| **Merge Sort** | $O(n)$ | 否（需暫存陣列） | 穩定 |
+| **Heap Sort** | $O(1)$ | 是 | 不穩定 |
+| **Composite Sort** | $O(n)$ | 否（需暫存陣列） | 穩定 |
+
+---
+
+## 測試與驗證
+
+### 測試案例
+
+**輸入**
+
+```text
+n = 5
+5 3 8 1 2
+
+```
+
+**輸出**
+
+```text
+Insertion Sort: 1 2 3 5 8
+Quick Sort: 1 2 3 5 8
+Merge Sort: 1 2 3 5 8
+Heap Sort: 1 2 3 5 8
+Composite Sort: 1 2 3 5 8
+
+```
+
+### 編譯與執行指令
+
+```bash
+g++ sort_benchmark.cpp -std=c++14 -O2 -o sort_benchmark
+./sort_benchmark
+
+```
+
+---
+
+## 申論及開發報告
+
+### 多種排序演算法比較原因
+
+1. **驗證理論與實務之落差**：同樣是 $O(n \log n)$ 的演算法（Quick, Merge, Heap），探討底層硬體快取對其實際速度的影響。
+2. **評估混合排序（Hybrid）的效益**：觀察在底層小規模子陣列直接截斷遞迴並切換演算法，能為整體效能帶來多少常數級的提升。
+
+### 實驗發現與優化分析
+
+1. **硬體快取在地性（Cache Locality）**：
+在 $n$ 較大時，**Quick Sort** 的效能通常明顯優於 **Heap Sort**。這是因為 Heap Sort 在進行 `HeapDown` 時，其節點存取在記憶體中呈加倍跳躍狀態，容易導致 CPU Cache Miss；而 Quick Sort 是連續的雙指針掃描，快取命中率極高。
+2. **混合優化的核心實作**：
+真正的混合排序（如本專案實作的 `Composite Sort`）不能僅在最外層做一次性分流。將 `Insertion Sort` 作為 Cutoff 機制融入分治法（Merge Sort）的底層子區塊（Chunk $\le 32$）中，能省去大量微小區塊合併時的動態記憶體配置與指針移動，從而達到最佳的優化效果。
