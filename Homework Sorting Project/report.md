@@ -1,5 +1,3 @@
-
-
 # 41343101
 
 # Sorting Algorithm Benchmark Report（排序演算法效能比較）
