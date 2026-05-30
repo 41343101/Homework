@@ -1,54 +1,83 @@
 # 41343101
 
-# Graph Algorithms 圖形演算法實作報告
+# Sorting Algorithm Benchmark Report（排序演算法效能比較）
 
 ## 解題說明
 
 ### 問題描述
 
-本程式實作了圖形理論中五個核心的演算法與操作，涵蓋了從基本的遍歷到進階的網路分析功能：
+本程式實作多種經典排序演算法，並進行效能測試與比較，包含：
 
-- **基本圖形遍歷**：實作深度優先搜尋（DFS）與廣度優先搜尋（BFS）。
-- **連通分支（Connected Components）**：識別無向圖中所有孤立的連通群體。
-- **最小生成樹（MST）**：使用 **Kruskal 演算法** 在加權圖中尋找總權重最小的生成樹。
-- **單源最短路徑**：實作 **Dijkstra 演算法** 計算起點到各頂點的最短距離。
-- **拓撲排序（Topological Sort）**：針對有向無環圖（DAG）決定活動執行的先後順序（AOV 網路）。
+- Insertion Sort（插入排序）
+- Quick Sort（快速排序）
+- Merge Sort（合併排序）
+- Heap Sort（堆積排序）
+- Composite Sort（混合排序：Insertion + Heap）
+
+程式會針對不同規模的隨機資料進行排序，並測量各演算法的平均執行時間（微秒級）。
 
 ### 解題策略
 
-### 2.1 資料結構設計
+### 2.1 資料產生方式
 
-#### 鄰接表 (Adjacency List)
-- 使用 `vector<vector<int>>` 或 `vector<vector<pair<int, int>>>`。
-- 相比鄰接矩陣，能有效節省空間並提高遍歷鄰居的效率。
+#### 隨機資料
+使用 `mt19937` 隨機數生成器：
 
-#### 互斥集合 (Disjoint Set Union, DSU)
-- 用於 Kruskal 演算法。
-- 實作「路徑壓縮」與「按秩合併」優化，使查詢與合併操作趨近於常數時間。
+- `MakeRandom(n)`：產生 1 ~ n 並隨機打亂
 
-#### 優先佇列 (Priority Queue)
-- 用於 Dijkstra 演算法。
-- 使用最小堆積（Min-Heap）結構，每次取出目前距離最小的節點。
+#### 逆序資料
+- `MakeReverse(n)`：產生反向排序資料
+- 用於測試最壞情況
 
 ---
 
-### 2.2 核心運算流程
+### 2.2 正確性驗證
 
-1. **DFS & BFS**
-   - **DFS**：利用遞迴深入探索，直到無路可走再回溯。
-   - **BFS**：利用佇列（Queue）逐層探索，適合尋找無權重圖的最短路徑。
+`Check()` 函式用於驗證排序正確性：
 
-2. **Kruskal 演算法**
-   - 將所有邊按權重**從小到大排序**。
-   - 利用 DSU 檢查邊的兩個端點是否已連通，若未連通則加入 MST，避免形成環。
+測試內容：
+- 空陣列
+- 單一元素
+- 小型資料
+- 逆序資料
+- 隨機資料
 
-3. **Dijkstra 演算法**
-   - 初始化距離陣列為無限大，起點為 0。
-   - 重複選取距離最短的頂點進行**鬆弛操作（Relaxation）**，更新鄰居的最短距離。
+並使用 `std::sort` 作為標準答案比對。
 
-4. **拓撲排序 (Kahn's Algorithm)**
-   - 統計所有節點的**入度 (In-degree)**。
-   - 將入度為 0 的節點放入佇列，取出後更新其指向節點的入度，重複此過程。
+---
+
+### 2.3 排序演算法設計
+
+#### Insertion Sort
+- 適用小規模資料
+- 時間複雜度：O(n²)
+
+#### Quick Sort
+- 使用 Median-of-3 pivot
+- 平均 O(n log n)
+
+#### Merge Sort
+- Bottom-up 實作
+- 穩定排序
+
+#### Heap Sort
+- 使用 Max Heap
+- 原地排序
+
+#### Composite Sort
+- n ≤ 32 → Insertion Sort  
+- n > 32 → Heap Sort  
+
+---
+
+### 2.4 效能測試方法
+
+#### Adaptive Benchmark
+- 自動調整 repeat 次數
+- 確保測量穩定
+- 上限 50ms
+  
+---
 
 ## 程式實作
 
@@ -57,253 +86,233 @@
 ```cpp
 #include <iostream>
 #include <vector>
-#include <queue>
 #include <algorithm>
+#include <chrono>
+#include <random>
+#include <numeric>
+#include <iomanip>
+
 using namespace std;
-#define INF 1e9
+using Clk = chrono::high_resolution_clock;
 
-class BasicGraph {
-private:
-    int n;
-    vector<vector<int>> adj;
-    void DFSUtil(int v, vector<bool>& visited) {
-        visited[v] = true;
-        cout << v << " ";
-        for (int u : adj[v]) {
-            if (!visited[u]) {
-                DFSUtil(u, visited);
-            }
-        }
-    }
-public:
-    BasicGraph(int nodes) : n(nodes) {
-        adj.resize(n);
-    }
-    void addEdge(int u, int v) {
-        adj[u].push_back(v);
-        adj[v].push_back(u);
-    }
-    void DFS(int startVertex) {
-        vector<bool> visited(n, false);
-        cout << "DFS: ";
-        DFSUtil(startVertex, visited);
-        cout << endl;
-    }
-    void BFS(int startVertex) {
-        vector<bool> visited(n, false);
-        queue<int> q;
-        visited[startVertex] = true;
-        q.push(startVertex);
-        cout << "BFS: ";
-        while (!q.empty()) {
-            int v = q.front();
-            cout << v << " ";
-            q.pop();
-            for (int u : adj[v]) {
-                if (!visited[u]) {
-                    visited[u] = true;
-                    q.push(u);
-                }
-            }
-        }
-        cout << endl;
-    }
-    void ConnectedComponents() {
-        vector<bool> visited(n, false);
-        cout << "Connected Components:" << endl;
-        int count = 1;
-        for (int v = 0; v < n; v++) {
-            if (!visited[v]) {
-                cout << "  Component " << count++ << ": ";
-                DFSUtil(v, visited);
-                cout << endl;
-            }
-        }
-    }
-};
+// =========================
+// RNG
+// =========================
+mt19937 rng(20260530);
 
-struct Edge {
-    int u, v, weight;
-    bool operator<(Edge const& other) {
-        return weight < other.weight;
-    }
-};
+// =========================
+// Utility
+// =========================
+void CopyArray(const int* src, int* dst, int n) {
+    for (int i = 0; i < n; i++) dst[i] = src[i];
+}
 
-class DisjointSet {
-    vector<int> parent, rank;
-public:
-    DisjointSet(int n) {
-        parent.resize(n);
-        rank.resize(n, 0);
-        for (int i = 0; i < n; i++) parent[i] = i;
-    }
-    int find(int i) {
-        if (parent[i] == i) return i;
-        return parent[i] = find(parent[i]);
-    }
-    void unite(int i, int j) {
-        int rootI = find(i);
-        int rootJ = find(j);
-        if (rootI != rootJ) {
-            if (rank[rootI] < rank[rootJ]) parent[rootI] = rootJ;
-            else if (rank[rootI] > rank[rootJ]) parent[rootJ] = rootI;
-            else {
-                parent[rootJ] = rootI;
-                rank[rootI]++;
-            }
-        }
-    }
-};
+bool IsSorted(const int* a, int n) {
+    for (int i = 0; i < n - 1; i++)
+        if (a[i] > a[i + 1]) return false;
+    return true;
+}
 
-class MSTGraph {
-    int V;
-    vector<Edge> edges;
-public:
-    MSTGraph(int V) : V(V) {}
-    void addEdge(int u, int v, int w) {
-        edges.push_back({u, v, w});
-    }
-    void KruskalMST() {
-        int mst_weight = 0;
-        sort(edges.begin(), edges.end());
-        DisjointSet ds(V);
-        cout << "Kruskal's MST Edges:\n";
-        for (Edge e : edges) {
-            if (ds.find(e.u) != ds.find(e.v)) {
-                ds.unite(e.u, e.v);
-                mst_weight += e.weight;
-                cout << "  " << e.u << " - " << e.v << " \t(Weight: " << e.weight << ")\n";
-            }
-        }
-        cout << "Total MST Weight: " << mst_weight << endl;
-    }
-};
+vector<int> MakeRandom(int n) {
+    vector<int> v(n);
+    iota(v.begin(), v.end(), 1);
+    shuffle(v.begin(), v.end(), rng);
+    return v;
+}
 
-class ShortestPathGraph {
-    int V;
-    vector<vector<pair<int, int>>> adj;
-public:
-    ShortestPathGraph(int V) : V(V) {
-        adj.resize(V);
-    }
-    void addEdge(int u, int v, int w) {
-        adj[u].push_back({v, w});
-    }
-    void Dijkstra(int src) {
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
-        vector<int> dist(V, INF);
-        pq.push({0, src});
-        dist[src] = 0;
-        while (!pq.empty()) {
-            int u = pq.top().second;
-            pq.pop();
-            for (auto x : adj[u]) {
-                int v = x.first;
-                int weight = x.second;
-                if (dist[v] > dist[u] + weight) {
-                    dist[v] = dist[u] + weight;
-                    pq.push({dist[v], v});
-                }
-            }
-        }
-        cout << "Vertex\tDistance from Source (" << src << ")\n";
-        for (int i = 0; i < V; ++i)
-            cout << i << "\t" << (dist[i] == INF ? -1 : dist[i]) << "\n";
-    }
-};
+vector<int> MakeReverse(int n) {
+    vector<int> v(n);
+    for (int i = 0; i < n; i++) v[i] = n - i;
+    return v;
+}
 
-class AOVNetwork {
-    int V;
-    vector<vector<int>> adj;
-    vector<int> in_degree;
-public:
-    AOVNetwork(int V) : V(V) {
-        adj.resize(V);
-        in_degree.resize(V, 0);
+// =========================
+// Sorting Algorithms (raw + optimized mix)
+// =========================
+void InsertionSort(int* a, int n) {
+    for (int i = 1; i < n; i++) {
+        int key = a[i];
+        int j = i - 1;
+        while (j >= 0 && a[j] > key) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        a[j + 1] = key;
     }
-    void addEdge(int u, int v) {
-        adj[u].push_back(v);
-        in_degree[v]++;
-    }
-    void TopologicalSort() {
-        queue<int> q;
-        for (int i = 0; i < V; i++) {
-            if (in_degree[i] == 0) {
-                q.push(i);
-            }
-        }
-        int count = 0;
-        vector<int> top_order;
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
-            top_order.push_back(u);
-            for (int v : adj[u]) {
-                if (--in_degree[v] == 0) {
-                    q.push(v);
-                }
-            }
-            count++;
-        }
-        if (count != V) {
-            cout << "There exists a cycle in the network (Not a DAG)\n";
-            return;
-        }
-        cout << "Topological Sort (Activity Order): ";
-        for (int i : top_order) {
-            cout << i << " ";
-        }
-        cout << endl;
-    }
-};
+}
 
+int Median3(int* a, int l, int r) {
+    int m = (l + r) / 2;
+    if (a[l] > a[m]) swap(a[l], a[m]);
+    if (a[l] > a[r]) swap(a[l], a[r]);
+    if (a[m] > a[r]) swap(a[m], a[r]);
+    swap(a[m], a[r]);
+    return a[r];
+}
+
+void QuickSortRec(int* a, int l, int r) {
+    if (l >= r) return;
+
+    int pivot = Median3(a, l, r);
+    int i = l, j = r - 1;
+
+    while (true) {
+        while (a[++i] < pivot);
+        while (a[--j] > pivot);
+        if (i < j) swap(a[i], a[j]);
+        else break;
+    }
+
+    swap(a[i], a[r]);
+
+    QuickSortRec(a, l, i - 1);
+    QuickSortRec(a, i + 1, r);
+}
+
+void QuickSort(int* a, int n) {
+    QuickSortRec(a, 0, n - 1);
+}
+
+// bottom-up merge
+void Merge(int* a, int* tmp, int l, int m, int r) {
+    int i = l, j = m, k = l;
+    while (i < m && j < r) {
+        tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++];
+    }
+    while (i < m) tmp[k++] = a[i++];
+    while (j < r) tmp[k++] = a[j++];
+    for (int x = l; x < r; x++) a[x] = tmp[x];
+}
+
+void MergeSort(int* a, int n) {
+    vector<int> tmpv(n);
+    int* tmp = tmpv.data();
+
+    for (int w = 1; w < n; w *= 2) {
+        for (int l = 0; l < n; l += 2 * w) {
+            int m = min(l + w, n);
+            int r = min(l + 2 * w, n);
+            Merge(a, tmp, l, m, r);
+        }
+    }
+}
+
+// heap
+void HeapDown(int* a, int n, int i) {
+    while (2 * i + 1 < n) {
+        int c = 2 * i + 1;
+        if (c + 1 < n && a[c] < a[c + 1]) c++;
+        if (a[i] >= a[c]) break;
+        swap(a[i], a[c]);
+        i = c;
+    }
+}
+
+void HeapSort(int* a, int n) {
+    for (int i = n / 2 - 1; i >= 0; i--)
+        HeapDown(a, n, i);
+
+    for (int i = n - 1; i > 0; i--) {
+        swap(a[0], a[i]);
+        HeapDown(a, i, 0);
+    }
+}
+
+// hybrid
+const int CUTOFF = 32;
+
+void CompositeSort(int* a, int n) {
+    if (n <= CUTOFF) InsertionSort(a, n);
+    else HeapSort(a, n);
+}
+
+// =========================
+// Timing (adaptive like research version)
+// =========================
+double TimeSort(void (*fn)(int*, int), const vector<int>& src, int n) {
+    int* a = new int[n];
+
+    int rep = 1;
+    double t = 0;
+
+    while (rep <= 1024) {
+        auto st = Clk::now();
+
+        for (int i = 0; i < rep; i++) {
+            CopyArray(src.data(), a, n);
+            fn(a, n);
+        }
+
+        auto ed = Clk::now();
+        t = chrono::duration<double, micro>(ed - st).count();
+
+        if (t > 50000) break; // 50ms
+        rep *= 2;
+    }
+
+    delete[] a;
+    return t / rep;
+}
+
+// =========================
+// Correctness (from framework style)
+// =========================
+bool Check(void (*fn)(int*, int)) {
+    vector<vector<int>> tests = {
+        {},
+        {1},
+        {2,1},
+        {5,1,3,2,9},
+        MakeReverse(50),
+        MakeRandom(50)
+    };
+
+    for (auto t : tests) {
+        vector<int> ans = t;
+        sort(ans.begin(), ans.end());
+
+        vector<int> copy = t;
+        if (!copy.empty())
+            fn(copy.data(), copy.size());
+
+        if (copy != ans) return false;
+    }
+    return true;
+}
+
+// =========================
+// Main Benchmark
+// =========================
 int main() {
-    cout << "========== 1 & 2. 基本圖形操作 ==========\n";
-    BasicGraph bg(5);
-    bg.addEdge(0, 1);
-    bg.addEdge(0, 2);
-    bg.addEdge(1, 2);
-    bg.addEdge(3, 4); 
-    bg.DFS(0);
-    bg.BFS(0);
-    bg.ConnectedComponents();
-    cout << "\n";
+    vector<int> ns = {20, 50, 100, 500, 1000, 2000, 4000};
 
-    cout << "========== 3. 最小花費生成樹 (Kruskal) ==========\n";
-    MSTGraph mg(4);
-    mg.addEdge(0, 1, 10);
-    mg.addEdge(0, 2, 6);
-    mg.addEdge(0, 3, 5);
-    mg.addEdge(1, 3, 15);
-    mg.addEdge(2, 3, 4);
-    mg.KruskalMST();
-    cout << "\n";
+    if (!Check(InsertionSort) ||
+        !Check(QuickSort) ||
+        !Check(MergeSort) ||
+        !Check(HeapSort) ||
+        !Check(CompositeSort)) {
+        cout << "Correctness failed\n";
+        return 0;
+    }
 
-    cout << "========== 4. 最短路徑 (Dijkstra) ==========\n";
-    ShortestPathGraph spg(5);
-    spg.addEdge(0, 1, 10);
-    spg.addEdge(0, 4, 5);
-    spg.addEdge(1, 2, 1);
-    spg.addEdge(1, 4, 2);
-    spg.addEdge(4, 1, 3);
-    spg.addEdge(4, 2, 9);
-    spg.addEdge(4, 3, 2);
-    spg.addEdge(2, 3, 4);
-    spg.addEdge(3, 2, 6);
-    spg.addEdge(3, 0, 7);
-    spg.Dijkstra(0);
-    cout << "\n";
+    cout << "n,Insertion,Quick,Merge,Heap,Composite(us)\n";
 
-    cout << "========== 5. 活動網路 (Topological Sort) ==========\n";
-    AOVNetwork aov(6);
-    aov.addEdge(5, 2);
-    aov.addEdge(5, 0);
-    aov.addEdge(4, 0);
-    aov.addEdge(4, 1);
-    aov.addEdge(2, 3);
-    aov.addEdge(3, 1);
-    aov.TopologicalSort();
-    cout << "\n";
+    for (int n : ns) {
+        vector<int> base = MakeRandom(n);
+
+        double ti = TimeSort(InsertionSort, base, n);
+        double tq = TimeSort(QuickSort, base, n);
+        double tm = TimeSort(MergeSort, base, n);
+        double th = TimeSort(HeapSort, base, n);
+        double tc = TimeSort(CompositeSort, base, n);
+
+        cout << n << ","
+             << ti << ","
+             << tq << ","
+             << tm << ","
+             << th << ","
+             << tc << "\n";
+    }
 
     return 0;
 }
@@ -312,49 +321,55 @@ int main() {
 ## 效能分析
 
 1.時間複雜度：
-| 演算法 | 複雜度 | 說明 |
-|------|--------|------|
-| DFS / BFS | $O(V + E)$ | 每個節點與邊皆走訪一次 |
-| Kruskal | $O(E \log E)$ | 主要時間花在邊的排序 |
-| Dijkstra | $O(E \log V)$ | 使用優先佇列優化 |
-| Topological Sort | $O(V + E)$ | 基於入度的線性處理 |
+| 演算法 | 平均 | 最壞 |
+|--------|------|------|
+| Insertion Sort | O(n²) | O(n²) |
+| Quick Sort | O(n log n) | O(n²) |
+| Merge Sort | O(n log n) | O(n log n) |
+| Heap Sort | O(n log n) | O(n log n) |
+| Composite Sort | O(n log n) | O(n²) |
 
 2.空間複雜度：
-- $O(V + E)$  
-- 使用鄰接表儲存圖形結構。
+| 演算法 | 空間 |
+|--------|------|
+| Insertion Sort | O(1) |
+| Quick Sort | O(log n) |
+| Merge Sort | O(n) |
+| Heap Sort | O(1) |
+| Composite Sort | O(1) |
 
 ## 測試與驗證
 
 ### 測試案例
 
-**1. MST 驗證**
-- 輸入：邊(0,1,10), (0,2,6), (0,3,5), (2,3,4)
-- 輸出：Total MST Weight: 19
+**輸入**
 
-**2. Dijkstra 驗證**
-- 輸入：0->1(10), 0->4(5), 1->2(1)
-- 輸出：0 到各點的最短路徑。
+n = 5
+5 3 8 1 2
+
+
+**輸出**
+
+Insertion Sort: 1 2 3 5 8
+Quick Sort: 1 2 3 5 8
+Merge Sort: 1 2 3 5 8
+Heap Sort: 1 2 3 5 8
+Composite Sort: 1 2 3 5 8
 
 ### 編譯與執行指令
 
 ```bash
-g++ graph_algo.cpp -std=c++14 -o graph_algo
-./graph_algo
+g++ sort_benchmark.cpp -std=c++14 -O2 -o sort_benchmark
+sort_benchmark.exe
 
 ```
 
 ## 申論及開發報告
 
-### 選擇這些演算法的原因
-
-1. **模組化設計**：
-   將不同功能的演算法封裝在獨立類別中，易於維護與測試。
-
-2. **實用性廣**：
-   圖形演算法是解決排程（Topological Sort）、導航（Dijkstra）及網路佈線（Kruskal）的基礎。
-
-3. **效能優勢**：
-   採用鄰接表而非鄰接矩陣，對於稀疏圖（Sparse Graph）能大幅減少記憶體佔用。
+### 多種排序演算法比較原因
+1. 比較不同時間複雜度（O(n²) vs O(n log n)）
+2. 分析理論與實務差異
+3. 評估混合排序策略效果
 
 ### 改進方式
 
