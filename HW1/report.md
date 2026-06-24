@@ -60,99 +60,156 @@
 以下為主要程式碼：
 
 ```cpp
-#include <iostream>
-#include <stdexcept>
+#include <iostream>     // 輸入輸出
+#include <stdexcept>    // runtime_error
 using namespace std;
 
+// =========================
+// 最小優先佇列(Min Priority Queue)
+// 抽象類別(介面)
+// =========================
 template <class T>
 class MinPQ {
 public:
     virtual ~MinPQ() {}
+
+    // 判斷是否為空
     virtual bool IsEmpty() const = 0;
+
+    // 取得最小元素
     virtual const T& Top() const = 0;
+
+    // 插入元素
     virtual void Push(const T&) = 0;
+
+    // 刪除最小元素
     virtual void Pop() = 0;
 };
-
+// =========================
+// MinHeap
+// 使用 Binary Heap 實作 MinPQ
+// =========================
 template <class T>
 class MinHeap : public MinPQ<T> {
 private:
-    T* heap;
-    int capacity;
-    int size;
-
+    T* heap;        // Heap陣列
+    int capacity;   // 最大容量
+    int size;       // 目前元素個數
+    // =========================
+    // 容量不足時擴充為兩倍
+    // =========================
     void Resize() {
-        capacity *= 2;
-        T* newHeap = new T[capacity + 1]; // index從1開始
 
+        capacity *= 2;
+
+        // index從1開始，因此多開一格
+        T* newHeap = new T[capacity + 1];
+
+        // 複製原本資料
         for (int i = 1; i <= size; i++)
             newHeap[i] = heap[i];
 
         delete[] heap;
         heap = newHeap;
     }
-
 public:
+    // =========================
+    // 建構子
+    // =========================
     MinHeap(int cap = 10) {
+
         capacity = cap;
-        heap = new T[capacity + 1]; // index從1開始
+
+        // index從1開始
+        heap = new T[capacity + 1];
+
         size = 0;
     }
-
+    // =========================
+    // 解構子
+    // =========================
     ~MinHeap() {
         delete[] heap;
     }
-
+    // =========================
+    // 判斷Heap是否為空
+    // =========================
     bool IsEmpty() const {
         return size == 0;
     }
-
+    // =========================
+    // 回傳最小值(根節點)
+    // =========================
     const T& Top() const {
+
         if (IsEmpty())
             throw runtime_error("Heap is empty");
         return heap[1];
     }
 
+    // =========================
+    // 插入元素
+    // Heapify Up (上浮)
+    // =========================
     void Push(const T& x) {
+
+        // 空間不足就擴充
         if (size + 1 == capacity)
             Resize();
 
+        // 新元素先放最後面
         int i = ++size;
 
-        // 上浮 (heapify up)
+        // 與父節點比較
         while (i != 1 && x < heap[i / 2]) {
-            heap[i] = heap[i / 2];
-            i /= 2;
-        }
 
+            // 父節點往下移
+            heap[i] = heap[i / 2];
+
+            // 繼續往上比較
+            i /= 2;
+        } // 放入正確位置
         heap[i] = x;
     }
 
+    // =========================
+    // 刪除最小元素
+    // Heapify Down (下沉)
+    // =========================
     void Pop() {
+
         if (IsEmpty())
             throw runtime_error("Heap is empty");
 
+        // 最後一個元素
         T last = heap[size--];
-
         int parent = 1;
         int child = 2;
 
-        // 下沉 (heapify down)
+        // 找適當位置放 last
         while (child <= size) {
-            if (child < size && heap[child] > heap[child + 1])
+
+            // 找較小的孩子
+            if (child < size &&
+                heap[child] > heap[child + 1])
                 child++;
 
+            // 已符合 MinHeap
             if (last <= heap[child])
                 break;
 
+            // 孩子往上移
             heap[parent] = heap[child];
             parent = child;
             child *= 2;
         }
-
+        // 放入最後元素
         heap[parent] = last;
     }
 
+    // =========================
+    // 依照Heap陣列索引輸出
+    // =========================
     void PrintByIndex() const {
         for (int i = 1; i <= size; i++)
             cout << heap[i] << " ";
@@ -160,22 +217,29 @@ public:
     }
 };
 
+// =========================
+// 主程式
+// =========================
 int main() {
-    MinHeap<int> h;
 
+    // 建立MinHeap
+    MinHeap<int> h;
     int n, x;
+
+    // 輸入元素數量
     cout << "輸入元素個數: ";
     cin >> n;
 
+    // 插入元素
     cout << "輸入元素: ";
     for (int i = 0; i < n; i++) {
         cin >> x;
         h.Push(x);
     }
 
+    // 輸出Heap內容
     cout << "Heap (index順序): ";
     h.PrintByIndex();
-
     return 0;
 }
 ```
