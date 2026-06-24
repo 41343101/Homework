@@ -58,105 +58,224 @@
 以下為主要程式碼：
 
 ```cpp
-#include <iostream>
-#include <cmath>
-#include <cstdlib>
-#include <ctime>
-#include <algorithm>
-#include <iomanip>
+#include <iostream>     // 輸入輸出
+#include <cmath>        // log2()
+#include <cstdlib>      // rand(), srand()
+#include <ctime>        // time()
+#include <algorithm>    // max(), swap()
+#include <iomanip>      // setw(), setprecision()
 using namespace std;
 
+// =========================
+// TreeNode 類別
+// BST 的每一個節點
+// =========================
 template <class K, class E>
 class TreeNode {
 public:
-    pair<K, E> data;
-    TreeNode* left;
-    TreeNode* right;
+    pair<K, E> data;    // 儲存 (key, value)
+    TreeNode* left;     // 指向左子樹
+    TreeNode* right;    // 指向右子樹
 
+    // 建構子
     TreeNode(const pair<K, E>& e)
         : data(e), left(nullptr), right(nullptr) {}
 };
 
+// =========================
+// BST(Binary Search Tree)
+// 二元搜尋樹
+// =========================
 template <class K, class E>
 class BST {
 private:
-    TreeNode<K, E>* root;
+    TreeNode<K, E>* root;   // 根節點
 
-    TreeNode<K, E>* insert(TreeNode<K, E>* node, const pair<K, E>& e) {
-        if (!node) return new TreeNode<K, E>(e);
+    // =========================
+    // 遞迴插入節點
+    // =========================
+    TreeNode<K, E>* insert(TreeNode<K, E>* node,
+                           const pair<K, E>& e)
+    {
+        // 找到空位置建立新節點
+        if (!node)
+            return new TreeNode<K, E>(e);
 
+        // key較小往左走
         if (e.first < node->data.first)
             node->left = insert(node->left, e);
+
+        // key較大往右走
         else if (e.first > node->data.first)
             node->right = insert(node->right, e);
 
+        // 回傳目前節點
         return node;
     }
 
-    int height(TreeNode<K, E>* node) {
-        if (!node) return 0;
-        return 1 + max(height(node->left), height(node->right));
+    // =========================
+    // 計算樹高
+    // Height = 1 + 左右子樹較大的高度
+    // =========================
+    int height(TreeNode<K, E>* node)
+    {
+        // 空樹高度為0
+        if (!node)
+            return 0;
+
+        return 1 +
+            max(height(node->left),
+                height(node->right));
     }
 
-    void destroy(TreeNode<K, E>* node) {
-        if (!node) return;
-        destroy(node->left);
-        destroy(node->right);
-        delete node;
+    // =========================
+    // 後序走訪刪除整棵樹
+    // 防止記憶體洩漏
+    // =========================
+    void destroy(TreeNode<K, E>* node)
+    {
+        if (!node)
+            return;
+
+        destroy(node->left);   // 刪左子樹
+        destroy(node->right);  // 刪右子樹
+
+        delete node;           // 刪自己
     }
 
 public:
-    BST() : root(nullptr) {}
-    ~BST() { destroy(root); }
 
-    void Insert(const pair<K, E>& e) {
+    // =========================
+    // 建構子
+    // 初始根節點為空
+    // =========================
+    BST() : root(nullptr) {}
+
+    // =========================
+    // 解構子
+    // 程式結束前釋放記憶體
+    // =========================
+    ~BST()
+    {
+        destroy(root);
+    }
+
+    // =========================
+    // 插入資料
+    // =========================
+    void Insert(const pair<K, E>& e)
+    {
         root = insert(root, e);
     }
 
-    int Height() {
+    // =========================
+    // 取得整棵樹高度
+    // =========================
+    int Height()
+    {
         return height(root);
     }
 };
 
-// Fisher–Yates shuffle
-void shuffleArray(int* a, int n) {
-    for (int i = n - 1; i > 0; --i) {
+// ======================================
+// Fisher–Yates Shuffle
+// 將陣列隨機打亂
+// ======================================
+void shuffleArray(int* a, int n)
+{
+    // 從最後一個元素開始往前交換
+    for (int i = n - 1; i > 0; --i)
+    {
+        // 產生 0~i 的隨機位置
         int j = rand() % (i + 1);
+
+        // 交換
         swap(a[i], a[j]);
     }
 }
 
-int main() {
+// =========================
+// 主程式
+// =========================
+int main()
+{
+    // 設定亂數種子
     srand((unsigned)time(nullptr));
 
-    int ns[] = { 100, 500, 1000, 2000, 3000, 4000, 5000,
-                 6000, 7000, 8000, 9000, 10000 };
+    // 測試的資料量
+    int ns[] =
+    {
+        100,
+        500,
+        1000,
+        2000,
+        3000,
+        4000,
+        5000,
+        6000,
+        7000,
+        8000,
+        9000,
+        10000
+    };
 
-    cout << left << setw(10) << "n"
+    // 輸出表頭
+    cout << left
+         << setw(10) << "n"
          << setw(10) << "Height"
-         << "Ratio(h/log2n)" << endl;
+         << "Ratio(h/log2n)"
+         << endl;
+
+    // 分隔線
     cout << string(40, '-') << endl;
 
-    for (int n : ns) {
+    // ==================================
+    // 依序測試不同 n
+    // ==================================
+    for (int n : ns)
+    {
+        // 建立空BST
         BST<int, int> tree;
 
+        // 動態配置陣列
         int* arr = new int[n];
+
+        // 建立 1~n
         for (int i = 0; i < n; i++)
             arr[i] = i + 1;
 
+        // 打亂順序
         shuffleArray(arr, n);
 
+        // 插入BST
         for (int i = 0; i < n; i++)
-            tree.Insert({arr[i], arr[i]});
+        {
+            tree.Insert(
+                {
+                    arr[i],  // key
+                    arr[i]   // value
+                }
+            );
+        }
 
+        // 計算樹高
         int h = tree.Height();
-        double ratio = (double)h / log2((double)n);
 
-        cout << left << setw(10) << n
+        // 計算高度與 log2(n) 的比值
+        double ratio =
+            (double)h /
+            log2((double)n);
+
+        // 輸出結果
+        cout << left
+             << setw(10) << n
              << setw(10) << h
-             << fixed << setprecision(4)
-             << ratio << endl;
+             << fixed
+             << setprecision(4)
+             << ratio
+             << endl;
 
+        // 釋放陣列記憶體
         delete[] arr;
     }
 
